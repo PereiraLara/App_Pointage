@@ -135,7 +135,13 @@ Vue.createApp({
             axios.post('../../api/codes/post_code.php', JSON.stringify(contact), {
                 headers: { 'Content-Type': 'application/json' }
             })
-                .then(() => {
+                .then((response) => {
+                    const data = response.data;
+                    if (data && data.message && !data.message.includes('succès')) {
+                        alert(data.message);
+                        return;
+                    }
+
                     alert('Code Enregistré(e)');
                     this.afficherFormulaireAjout = false;
                     this.getCodes();
@@ -183,7 +189,13 @@ Vue.createApp({
                         'Content-Type': 'application/json',
                     }
                 })
-                .then(() => {
+                .then((response) => {
+                    const data = response.data;
+                    if (data && data.message && !data.message.includes('succès')) {
+                        alert(data.message);
+                        return;
+                    }
+
                     alert('Code Actualisé(e)');
                     this.afficherFormulaireUpdate = false;
                     this.getCodes();
@@ -218,7 +230,13 @@ Vue.createApp({
             axios.post('../../api/codes/post_reactivate_code.php', JSON.stringify(contact), {
                 headers: { 'Content-Type': 'application/json' }
             })
-                .then(() => {
+                .then((response) => {
+                    const data = response.data;
+                    if (data && data.message && !data.message.includes('succès')) {
+                        alert(data.message);
+                        return;
+                    }
+
                     alert('Code réactivé avec succès');
                     this.afficherFormulaireReactiver = false;
                     this.getCodes();

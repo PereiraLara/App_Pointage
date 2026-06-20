@@ -13,26 +13,26 @@
 <div id="app" class="p-4">
     <app-menu :user="connectedTravailleur"></app-menu>
 
-    <div>
+    <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 mb-4">
         <button
-                class="bg-rose-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-rose-700"
+                class="bg-rose-400 text-white font-medium rounded-lg py-2 px-4 hover:bg-rose-700"
                 @click="goToStats(selectedEquipe.id_equipe)">
-            <i  class="icofont-history"></i> Statistiques
+            <i class="icofont-history"></i> Statistiques
         </button>
         <button v-show="isAdmin"
-                class="bg-violet-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-violet-700"
+                class="bg-violet-400 text-white font-medium rounded-lg py-2 px-4 hover:bg-violet-700"
                 @click="openUpdateForm">
-            <i  class="icofont-ui-edit"></i> Modifier
+            <i class="icofont-ui-edit"></i> Modifier
         </button>
         <button v-show="isAdmin"
-                class="bg-teal-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-teal-700"
+                class="bg-teal-400 text-white font-medium rounded-lg py-2 px-4 hover:bg-teal-700"
                 @click="openAssignmentForm">
-            <i  class="icofont-ui-add"></i> Assigner Travailleurs
+            <i class="icofont-ui-add"></i> Assigner Travailleurs
         </button>
         <button v-show="isAdmin"
-                class="bg-red-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-red-700 lg:absolute right-0"
+                class="bg-red-400 text-white font-medium rounded-lg py-2 px-4 hover:bg-red-700 sm:ml-auto"
                 @click="openDeleteForm">
-            <i  class="icofont-ui-delete"></i> Supprimer Equipe
+            <i class="icofont-ui-delete"></i> Supprimer Equipe
         </button>
     </div>
 

@@ -28,7 +28,9 @@ if (!isset($data->id_code)) {
 $stmt = $conn->prepare(
     'SELECT nom_code, valeur, description, date_fin
      FROM log_evolution_code_heure
-     WHERE id_code = ?'
+     WHERE id_code = ?
+     ORDER BY date_debut DESC
+     LIMIT 1'
 );
 $stmt->execute([$data->id_code]);
 $existing = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -57,10 +59,11 @@ if ($date_debut <= $existing['date_fin']) {
 }
 
 $insert = $conn->prepare(
-    'INSERT INTO log_evolution_code_heure (nom_code, valeur, description, date_debut, date_fin)
-                VALUES (?, ?, ?, ?, NULL)'
+    'INSERT INTO log_evolution_code_heure (id_code, nom_code, valeur, description, date_debut, date_fin)
+                VALUES (?, ?, ?, ?, ?, NULL)'
 );
 $insert->execute([
+    $data->id_code,
     $existing['nom_code'],
     $existing['valeur'],
     $existing['description'],
@@ -68,7 +71,7 @@ $insert->execute([
 ]);
 
 if ($insert->rowCount() > 0) {
-    echo json_encode(['message' => 'Code réactivé avec succès', 'id_code' => $conn->lastInsertId()]);
+    echo json_encode(['message' => 'Code réactivé avec succès', 'id_code' => $data->id_code]);
 } else {
     echo json_encode(['message' => 'Erreur lors de la réactivation']);
 }

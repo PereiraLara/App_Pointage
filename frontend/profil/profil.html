@@ -11,36 +11,36 @@
     <script src="../shared/auth.js" type="module"></script>
 </head>
 <body>
-<div id="app" class="p-4 h-svh overflow-clip">
+<div id="app" class="p-4 overflow-clip">
     <app-menu :user="connectedTravailleur"></app-menu>
 
-    <div>
+    <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 mb-4">
         <button
-                class="bg-orange-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-orange-700"
+                class="bg-orange-400 text-white font-medium rounded-lg py-2 px-4 hover:bg-orange-700"
                 @click="goToHistorique(selectedTravailleur.id_travailleur)"
         >
-            <i  class="icofont-history"></i> Historique
+            <i class="icofont-history"></i> Historique
         </button>
         <button v-show="isAdmin" v-if="id_travailleur != connectedTravailleur.id_travailleur"
-                class="bg-violet-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-violet-700"
+                class="bg-violet-400 text-white font-medium rounded-lg py-2 px-4 hover:bg-violet-700"
                 @click="openUpdateForm">
-            <i  class="icofont-ui-edit"></i> Modifier
+            <i class="icofont-ui-edit"></i> Modifier
         </button>
         <button v-show="isAdmin" v-if="id_travailleur != connectedTravailleur.id_travailleur"
-                class="bg-sky-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-sky-700"
+                class="bg-sky-400 text-white font-medium rounded-lg py-2 px-4 hover:bg-sky-700"
                 @click="openContratForm">
-            <i  class="icofont-ui-add"></i> Ajouter Contrat
+            <i class="icofont-ui-add"></i> Ajouter Contrat
         </button>
         <button v-show="isAdmin" v-if="id_travailleur != connectedTravailleur.id_travailleur"
-                class="bg-red-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-red-700 absolute right-0"
+                class="bg-red-400 text-white font-medium rounded-lg py-2 px-4 hover:bg-red-700 sm:ml-auto"
                 @click="openDeleteForm">
-            <i  class="icofont-ui-delete"></i> Supprimer Travailleur
+            <i class="icofont-ui-delete"></i> Supprimer Travailleur
         </button>
         <button v-if="id_travailleur == connectedTravailleur.id_travailleur"
-                class="bg-red-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-red-700  absolute right-0"
+                class="bg-red-400 text-white font-medium rounded-lg py-2 px-4 hover:bg-red-700 sm:ml-auto"
                 @click="deconnect(selectedTravailleur.id_travailleur)"
         >
-            <i  class="icofont-sign-out"></i> Deconnexion
+            <i class="icofont-sign-out"></i> Deconnexion
         </button>
     </div>
 

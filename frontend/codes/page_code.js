@@ -135,7 +135,7 @@ Vue.createApp({
                 .then(() => {
                     alert('Code Actualisé(e)');
                     this.afficherFormulaireUpdate = false;
-                    this.getCodes();
+                    this.getCode();
                 })
                 .catch((error) => {
                     alert('Probleme d\'enregistrement');
@@ -169,7 +169,7 @@ Vue.createApp({
                 .then(() => {
                     alert('Code réactivé avec succès');
                     this.afficherFormulaireReactiver = false;
-                    this.getCodes();
+                    this.getCode();
                 })
                 .catch(error => {
                     alert('Erreur lors de la réactivation');

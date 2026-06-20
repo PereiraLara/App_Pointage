@@ -41,7 +41,7 @@
                 @contextmenu.prevent="openContextMenu($event, equipe)"
                 :class="['cursor-pointer hover:bg-sky-50 transition-colors',
                         { 'bg-gray-200 hover:bg-gray-300': equipe.date_fin != null },
-                        { 'bg-sky-100': contextMenuVisible && selectedEquipe && selectedEquipe.id_equipe === equipe.id_equipe && selectedEquipe.date_fin == null }]"
+                        { 'bg-sky-100': contextMenuVisible && selectedEquipe && selectedEquipe.id_equipe === equipe.id_equipe && selectedEquipe.date_fin == null && connectedTravailleur.privileges === 'admin' }]"
             >
                 <td class="px-8 py-2.5 font-medium text-gray-700">{{equipe.id_equipe}}</td>
                 <td class="px-4 py-2.5 text-gray-800">{{equipe.nom_equipe}}</td>

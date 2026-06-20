@@ -27,7 +27,8 @@ if (!isset($data->id_code)) {
 $id_code = $data->id_code;
 
 $stmt = $conn->prepare('UPDATE log_evolution_code_heure SET date_fin = CURRENT_DATE 
-                                    WHERE id_code=?');
+                                    WHERE id_code=?
+                                    AND date_fin is null');
 $stmt->execute( [$id_code] );
 
 if ($stmt->rowCount() === 0) {

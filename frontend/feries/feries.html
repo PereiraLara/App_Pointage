@@ -73,7 +73,7 @@
       >
         <td class="px-4 py-2.5 text-gray-800">{{ferie.nom_ferie}}</td>
         <td class="text-center px-4 py-2.5 text-gray-500">{{ formatDateMonth(ferie.event_date) }}</td>
-        <td class="p-2 text-center">
+        <td class="hidden lg:table-cell p-2 text-center">
             <span :class="ferie.legal ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
                   class="px-2 py-0.5 rounded-full text-xs font-medium">
               {{ ferie.legal ? 'Légal' : 'Non-légal' }}
@@ -118,7 +118,7 @@
         <td class="text-center px-4 py-2.5 text-gray-500">
           {{ ferieMobile.decalage_jours >= 0 ? '+' + ferieMobile.decalage_jours : ferieMobile.decalage_jours }}
         </td>
-        <td class="p-2 text-center">
+        <td class="hidden lg:table-cell p-2 text-center">
             <span :class="ferieMobile.legal ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
                   class="px-2 py-0.5 rounded-full text-xs font-medium">
               {{ ferieMobile.legal ? 'Légal' : 'Non-légal' }}

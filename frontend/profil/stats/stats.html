@@ -11,21 +11,21 @@
     <script src="../../shared/menu.js"></script>
 </head>
 <body>
-<div id="app" class="p-4 h-svh overflow-clip">
+<div id="app" class="p-4 h-svh">
     <app-menu :user="connectedTravailleur"></app-menu>
 
-    <div>
-        <button class="bg-emerald-400 hover:bg-emerald-700 text-white font-medium rounded-lg py-2 px-4 mb-4"
+    <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 mb-4">
+        <button class="bg-emerald-400 hover:bg-emerald-700 text-white font-medium rounded-lg py-2 px-4"
                 @click="goToProfil(id_travailleur)">
             <i class="icofont-arrow-left"></i> Retour profil
         </button>
 
-        <button class="bg-orange-400 hover:bg-orange-700 text-white font-medium rounded-lg py-2 px-4 mb-4 ml-4"
+        <button class="bg-orange-400 hover:bg-orange-700 text-white font-medium rounded-lg py-2 px-4"
                 @click="goToHistorique(id_travailleur)">
             <i class="icofont-arrow-left"></i> Retour historique
         </button>
 
-        <button class="bg-rose-400 hover:bg-rose-700 text-white font-medium rounded-lg py-2 px-4 mb-4 ml-4 absolute right-4"
+        <button class="bg-rose-400 hover:bg-rose-700 text-white font-medium rounded-lg py-2 px-4 sm:ml-auto"
                 @click="goToDetailStats(id_travailleur)">
             <i class="icofont-arrow-right"></i> Extra Stats
         </button>
