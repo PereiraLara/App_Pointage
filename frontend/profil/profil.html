@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>profil</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../assets/fonts/icofont/icofont.min.css">
+    <script src="../shared/menu.js"></script>
+    <script src="../shared/auth.js" type="module"></script>
+</head>
+<body>
+<div id="app" class="p-4 h-svh overflow-clip">
+    <app-menu :user="connectedTravailleur"></app-menu>
+
+    <div>
+        <button
+                class="bg-orange-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-orange-700"
+                @click="goToHistorique(selectedTravailleur.id_travailleur)"
+        >
+            <i  class="icofont-history"></i> Historique
+        </button>
+        <button v-show="isAdmin" v-if="id_travailleur != connectedTravailleur.id_travailleur"
+                class="bg-violet-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-violet-700"
+                @click="openUpdateForm">
+            <i  class="icofont-ui-edit"></i> Modifier
+        </button>
+        <button v-show="isAdmin" v-if="id_travailleur != connectedTravailleur.id_travailleur"
+                class="bg-sky-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-sky-700"
+                @click="openContratForm">
+            <i  class="icofont-ui-add"></i> Ajouter Contrat
+        </button>
+        <button v-show="isAdmin" v-if="id_travailleur != connectedTravailleur.id_travailleur"
+                class="bg-red-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-red-700 absolute right-0"
+                @click="openDeleteForm">
+            <i  class="icofont-ui-delete"></i> Supprimer Travailleur
+        </button>
+        <button v-if="id_travailleur == connectedTravailleur.id_travailleur"
+                class="bg-red-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-red-700  absolute right-0"
+                @click="deconnect(selectedTravailleur.id_travailleur)"
+        >
+            <i  class="icofont-sign-out"></i> Deconnexion
+        </button>
+    </div>
+
+    <p class="flex justify-self-center font-bold size-2xl py-4 -mt-4 lg:hidden text-gray-800">Profil Travailleur no {{ selectedTravailleur.id_travailleur }}</p>
+
+    <div class="grid grid-cols-7 h-3/4 lg:inline hidden">
+        <div class="col-span-3 col-start-2 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+            <table class="w-full table-auto border-collapse">
+                <thead>
+                <tr class="bg-amber-50 sticky fixed top-0 h-11 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide shadow-sm">
+                    <th class="px-4">No Travailleur</th>
+                    <th class="px-4">Nom</th>
+                    <th class="text-center px-4">No Registre National</th>
+                    <th class="px-4">Email</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                <tr>
+                    <td class="px-8 py-2.5 font-medium text-gray-700">{{ selectedTravailleur.id_travailleur }}</td>
+                    <td class="px-4 py-2.5 text-gray-800">{{ selectedTravailleur.nom }}</td>
+                    <td class="text-center px-4 py-2.5 text-gray-500">{{ selectedTravailleur.no_registre_national }}</td>
+                    <td class="px-4 py-2.5 text-gray-500">{{ selectedTravailleur.email }}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="lg:hidden">
+        <div class="col-span-3 col-start-2 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+            <table class="w-full table-auto border-collapse">
+                <tr class="divide-x divide-gray-100">
+                    <th class="bg-amber-50 px-4 py-2.5 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide">Nom</th>
+                    <td class="px-4 py-2.5 text-gray-800">{{ selectedTravailleur.nom }}</td>
+                </tr>
+                <tr class="divide-x divide-gray-100 border-t border-gray-100">
+                    <th class="bg-amber-50 px-4 py-2.5 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide">No Registre National</th>
+                    <td class="px-4 py-2.5 text-gray-500">{{ selectedTravailleur.no_registre_national }}</td>
+                </tr>
+                <tr class="divide-x divide-gray-100 border-t border-gray-100">
+                    <th class="bg-amber-50 px-4 py-2.5 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide">Email</th>
+                    <td class="px-4 py-2.5 text-gray-500">{{ selectedTravailleur.email }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <br>
+    <h3 class="font-semibold text-gray-800 text-lg">Contrats:</h3>
+    <h3 v-if="contrats.length === 0" class="text-gray-500">Aucun contrat Signe</h3>
+    <div v-else class="grid grid-cols-7 h-3/4 inline">
+        <div class="col-span-7 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+            <table class="w-full table-auto border-collapse">
+                <thead>
+                <tr class="bg-amber-50 sticky fixed top-0 h-11 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide shadow-sm">
+                    <th class="px-4">No Contrat</th>
+                    <th class="px-4">Type</th>
+                    <th class="text-center lg:table-cell hidden px-4">Heures par Journee de travail</th>
+                    <th class="text-center px-4">Date Debut</th>
+                    <th class="text-center px-4">Date Fin</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                <tr v-for="contrat in contrats"
+                    :key="contrat.id_contrat"
+                >
+                    <td class="px-8 py-2.5 font-medium text-gray-700">{{ contrat.id_contrat }}</td>
+                    <td class="px-4 py-2.5 text-gray-800">{{ contrat.type_contrat }}</td>
+                    <td class="text-center lg:table-cell hidden px-4 py-2.5 text-gray-500">{{ contrat.heures_journee_travail }} h</td>
+                    <td class="text-center px-4 py-2.5 text-gray-500">{{ formatDate(contrat.date_debut) }}</td>
+                    <td class="text-center px-4 py-2.5 text-gray-500">{{ formatDate(contrat.date_fin) }}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div v-if="afficherFormulaireUpdate" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form @submit.prevent="modTravailleur" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <div class="flex justify-between items-center bg-gradient-to-r from-violet-400 to-violet-500 px-6 py-4">
+                <h2 class="text-xl font-semibold text-white flex items-center gap-2"><i class="icofont-ui-edit"></i> Actualiser travailleur No {{selectedTravailleur.id_travailleur}}</h2>
+                <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors" @click="afficherFormulaireUpdate = !afficherFormulaireUpdate"></i>
+            </div>
+            <div class="px-6 py-6 space-y-4">
+                <div>
+                    <label for="nom" class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                    <input name="nom" id="nom" v-model="selectedTravailleur.nom" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label for="no_regis" class="block text-sm font-medium text-gray-700 mb-1">No registre national</label>
+                    <input name="no_regis" id="no_regis" v-model="selectedTravailleur.no_registre_national" @input="formatNrnUpdate" maxlength="15" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" name="email" v-model="selectedTravailleur.email" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button type="submit" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+            </div>
+        </form>
+    </div>
+
+    <div v-if="afficherFormulaireContrat" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form @submit.prevent="createContrat" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <div class="flex justify-between items-center bg-gradient-to-r from-sky-500 to-sky-600 px-6 py-4">
+                <h2 class="text-xl font-semibold text-white flex items-center gap-2"><i class="icofont-file-alt"></i> Creation de Contrat pour Travailleur No {{selectedTravailleur.id_travailleur}}</h2>
+                <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors" @click="afficherFormulaireContrat = !afficherFormulaireContrat"></i>
+            </div>
+            <div class="px-6 py-6 space-y-4">
+                <div>
+                    <label for="type_contrat" class="block text-sm font-medium text-gray-700 mb-1">Type de Contrat</label>
+                    <select id="type_contrat" v-model="contrat.type_contrat" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                        <option v-for="type in type_contrat" :key="type" :value="type">{{ type }}</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="heures_journee_travail" class="block text-sm font-medium text-gray-700 mb-1">Heures Prestées par Jour</label>
+                    <input id="heures_journee_travail" type="number" min="7.6" max="8" step="0.4" v-model="contrat.heures_journee_travail" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                </div>
+                <div>
+                    <label for="date_debut" class="block text-sm font-medium text-gray-700 mb-1">Date de Debut</label>
+                    <input id="date_debut" type="date" v-model="contrat.date_debut" :max="contrat.date_fin" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                </div>
+                <div>
+                    <label for="date_fin" class="block text-sm font-medium text-gray-700 mb-1">Date de Fin</label>
+                    <input id="date_fin" type="date" v-model="contrat.date_fin" :min="contrat.date_debut" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button type="submit" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+            </div>
+        </form>
+    </div>
+
+    <div v-if="afficherFormulaireDelete" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 px-6 py-8 text-center">
+            <div class="flex justify-center mb-3">
+                <span class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-500 text-2xl">
+                    <i class="icofont-warning-alt"></i>
+                </span>
+            </div>
+            <p class="text-lg font-semibold text-gray-800 mb-6">Valider la suppression ?</p>
+            <div class="flex justify-center gap-3">
+                <button type="submit" @click="afficherFormulaireDelete = !afficherFormulaireDelete;deleteTravailleur()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg py-2.5 px-5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+                <button @click="afficherFormulaireDelete = !afficherFormulaireDelete;" class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg py-2.5 px-5 transition-all"><i class="icofont-close"></i> Annuler</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+<script src="profil.js" type="module"></script>
+</body>
+</html>

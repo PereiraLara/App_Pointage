@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>calendrier</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../assets/fonts/icofont/icofont.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/styles/ht-theme-horizon.min.css">
+    <script src="../shared/menu.js"></script>
+</head>
+<style>
+    .handsontable td,
+    .handsontable th {
+        background: #ffffff !important;
+        border-color: #e5e7eb !important;
+    }
+
+    .handsontable th {
+        background: #f9fafb !important;
+    }
+
+    .handsontable td.jour-ferie {
+        background: #EEEEEE !important;   /* gray-200 */
+        cursor: not-allowed !important;
+    }
+
+    .handsontable th.jour-ferie {
+        background: #d1d5db !important;   /* gray-300 */
+        cursor: not-allowed !important;
+    }
+</style>
+<body class="bg-gray-50">
+<div id="app" class="p-4 h-svh overflow-clip">
+    <div id="menu-app">
+        <app-menu :user="connectedTravailleur"></app-menu>
+    </div>
+
+    <div class="flex justify-center items-start px-2 sm:px-4 h-[85vh]">
+        <div class="w-full rounded-2xl shadow-xl bg-white p-4 flex flex-col h-full overflow-hidden">
+
+            <header class="bg-amber-50 -m-4 mb-6 p-4 flex justify-between lg:justify-center items-center border-b border-amber-100">
+                <span id="calendar-prev"
+                      class="icofont-simple-left text-2xl sm:text-3xl cursor-pointer p-2 rounded-full text-gray-600 hover:text-sky-600 hover:bg-white transition-colors">
+                </span>
+                <input type="month" id="calendar-current-date"
+                       class="calendar-current-date pl-4 text-lg sm:text-xl font-bold text-center bg-amber-50 text-gray-800 focus:outline-none"/>
+                <span id="calendar-next"
+                      class="icofont-simple-right text-2xl sm:text-3xl cursor-pointer p-2 rounded-full text-gray-600 hover:text-sky-600 hover:bg-white transition-colors">
+                </span>
+            </header>
+            <div class="lg:hidden">
+                <!-- jours de la semaine -->
+                <ul class="calendar-weekdays grid grid-cols-7 gap-1 sm:gap-3 text-center font-semibold text-xs sm:text-base mb-4 text-gray-500">
+                    <li>Dim</li>
+                    <li>Lun</li>
+                    <li>Mar</li>
+                    <li>Mer</li>
+                    <li>Jeu</li>
+                    <li>Ven</li>
+                    <li>Sam</li>
+                </ul>
+
+                <!-- jours -->
+                <ul class="calendar-dates
+                   flex-1
+                   grid grid-cols-7
+                   auto-rows-fr
+                   gap-1 sm:gap-3
+                   text-center
+                   text-sm sm:text-lg">
+                </ul>
+
+            </div>
+            <div class="mt-6 lg:block hidden">
+                <div class="overflow-x-auto rounded-xl border border-gray-200 p-2">
+                    <div id="encodageMois"></div>
+                </div>
+                <button onclick="setHeures()" class="flex justify-center place-self-center m-4 p-4 bg-blue-400 hover:bg-blue-500 w-1/3 text-white font-medium rounded-lg shadow-sm hover:shadow-md">
+                    <i class="icofont-save pt-1 mr-2"></i>
+                    <p>Sauver</p>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../shared/auth.js"></script>
+<script src="calendrier.js"></script>
+</body>
+</html>

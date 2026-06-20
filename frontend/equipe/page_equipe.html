@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>pageEquipe</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../assets/fonts/icofont/icofont.min.css">
+    <script src="../shared/menu.js"></script>
+</head>
+<body>
+<div id="app" class="p-4">
+    <app-menu :user="connectedTravailleur"></app-menu>
+
+    <div>
+        <button
+                class="bg-rose-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-rose-700"
+                @click="goToStats(selectedEquipe.id_equipe)">
+            <i  class="icofont-history"></i> Statistiques
+        </button>
+        <button v-show="isAdmin"
+                class="bg-violet-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-violet-700"
+                @click="openUpdateForm">
+            <i  class="icofont-ui-edit"></i> Modifier
+        </button>
+        <button v-show="isAdmin"
+                class="bg-teal-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-teal-700"
+                @click="openAssignmentForm">
+            <i  class="icofont-ui-add"></i> Assigner Travailleurs
+        </button>
+        <button v-show="isAdmin"
+                class="bg-red-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-red-700 lg:absolute right-0"
+                @click="openDeleteForm">
+            <i  class="icofont-ui-delete"></i> Supprimer Equipe
+        </button>
+    </div>
+
+    <p class="flex justify-self-center font-bold size-2xl py-4 -mt-4 lg:hidden text-gray-800">Profil Equipe no {{ selectedEquipe.id_equipe }}</p>
+
+    <div class="grid grid-cols-7 h-3/4 lg:inline hidden">
+        <div class="col-span-3 col-start-2 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+            <table class="w-full table-auto border-collapse">
+                <thead>
+                <tr class="bg-amber-50 sticky fixed top-0 h-11 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide shadow-sm">
+                    <th class="px-4">No Equipe</th>
+                    <th class="px-4">Nom</th>
+                    <th class="px-4">Specialisation</th>
+                    <th class="text-center px-4">Chef d'Equipe</th>
+                    <th class="text-center px-4">Capacite</th>
+                    <th class="text-center px-4">No Parent</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                <tr>
+                    <td class="px-8 py-2.5 font-medium text-gray-700">{{ selectedEquipe.id_equipe }}</td>
+                    <td class="px-4 py-2.5 text-gray-800">{{ selectedEquipe.nom_equipe }}</td>
+                    <td class="px-4 py-2.5 text-gray-500">{{ selectedEquipe.specialisation }}</td>
+                    <td class="px-4 py-2.5 text-center text-gray-500">{{ selectedEquipe.chef_de_equipe }}</td>
+                    <td class="px-4 py-2.5 text-center text-gray-500">{{ selectedEquipe.capacite }}</td>
+                    <td class="px-4 py-2.5 text-center text-gray-500">{{ selectedEquipe.parent_id }}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="lg:hidden">
+        <div class="col-span-3 col-start-2 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+            <table class="w-full table-auto border-collapse">
+                <tr class="divide-x divide-gray-100">
+                    <th class="bg-amber-50 px-4 py-2.5 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide">Nom</th>
+                    <td class="px-4 py-2.5 text-gray-800">{{ selectedEquipe.nom_equipe }}</td>
+                </tr>
+                <tr class="divide-x divide-gray-100 border-t border-gray-100">
+                    <th class="bg-amber-50 px-4 py-2.5 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide">Specialisation</th>
+                    <td class="px-4 py-2.5 text-gray-500">{{ selectedEquipe.specialisation }}</td>
+                </tr>
+                <tr class="divide-x divide-gray-100 border-t border-gray-100">
+                    <th class="bg-amber-50 px-4 py-2.5 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide">Chef d'Equipe</th>
+                    <td class="px-4 py-2.5 text-gray-500">{{ selectedEquipe.chef_de_equipe }}</td>
+                </tr>
+                <tr class="divide-x divide-gray-100 border-t border-gray-100">
+                    <th class="bg-amber-50 px-4 py-2.5 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide">Capacite</th>
+                    <td class="px-4 py-2.5 text-gray-500">{{ selectedEquipe.capacite }}</td>
+                </tr>
+                <tr v-show="selectedEquipe.parent_id" class="divide-x divide-gray-100 border-t border-gray-100">
+                    <th class="bg-amber-50 px-4 py-2.5 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide">No Parent</th>
+                    <td class="px-4 py-2.5 text-gray-500">{{ selectedEquipe.parent_id }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <p class="m-4 mt-8 font-semibold lg:text-lg text-gray-800">Travailleurs dans Equipe {{selectedEquipe.id_equipe}}</p>
+
+    <div class="grid grid-cols-6 h-3/4 inline">
+        <div class="col-span-6 lg:col-span-4 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+            <table class="w-full table-auto border-collapse">
+                <thead>
+                <tr class="bg-amber-50 sticky fixed top-0 h-11 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide shadow-sm">
+                    <th class="px-4">No Travailleur</th>
+                    <th class="px-4">Nom</th>
+                    <th class="px-4">Role</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                <tr v-for="travailleur in travailleurs"
+                    :key="travailleur.id_travailleur"
+                    @click="goToProfil(travailleur.id_travailleur)"
+                    class="cursor-pointer hover:bg-sky-50 transition-colors"
+                >
+                    <td class="px-8 py-2.5 font-medium text-gray-700">{{ travailleur.id_travailleur }}</td>
+                    <td class="px-4 py-2.5 text-gray-800">{{ travailleur.nom }}</td>
+                    <td class="px-4 py-2.5 text-gray-500">{{ travailleur.role }}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div v-if="formulaireAssignerTravailleur" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form @submit.prevent="assignTravailleur" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 h-3/4 flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4 shrink-0">
+                <h2 class="text-xl font-semibold text-white flex items-center gap-2"><i class="icofont-ui-user"></i> Assigner des Travailleurs — Équipe {{ selectedEquipe.id_equipe }}</h2>
+                <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors" @click="formulaireAssignerTravailleur = !formulaireAssignerTravailleur;getEquipe()"></i>
+            </div>
+            <div class="px-6 pt-4 shrink-0">
+                <p class="mb-2 text-sm font-medium"
+                   :class="travailleurs.filter(t=>t.checked).length > selectedEquipe.capacite -1 ? 'text-red-600' : 'text-gray-500'">
+                    {{ travailleurs.filter(t => t.checked).length }} / {{selectedEquipe.capacite - 1}} sélectionnés
+                </p>
+            </div>
+            <div class="overflow-y-auto flex-1 mx-6 border border-gray-200 rounded-lg">
+                <table class="w-full table-auto border-collapse">
+                    <thead>
+                    <tr class="bg-amber-50 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                        <th class="p-2.5 text-center">Sélectionner</th>
+                        <th class="p-2.5">No</th>
+                        <th class="p-2.5">Nom</th>
+                    </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                    <tr v-for="travailleur in travailleurs" :key="travailleur.id_travailleur"
+                        class="hover:bg-teal-50 transition-colors">
+                        <td class="text-center p-2.5">
+                            <input type="checkbox" v-model="travailleur.checked" class="w-4 h-4 accent-teal-500">
+                        </td>
+                        <td class="text-center p-2.5 font-medium text-gray-700">{{ travailleur.id_travailleur }}</td>
+                        <td class="p-2.5 text-gray-800">{{ travailleur.nom }}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end shrink-0">
+                <button type="submit"
+                        :disabled="travailleurs.filter(t=>t.checked).length > selectedEquipe.capacite - 1"
+                        class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+            </div>
+        </form>
+    </div>
+
+    <div v-if="afficherFormulaireUpdate" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <div class="flex justify-between items-center bg-gradient-to-r from-violet-400 to-violet-500 px-6 py-4">
+                <h2 class="text-xl font-semibold text-white flex items-center gap-2"><i class="icofont-ui-edit"></i> Actualiser equipe No {{selectedEquipe.id_equipe}}</h2>
+                <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors" @click="afficherFormulaireUpdate = !afficherFormulaireUpdate"></i>
+            </div>
+            <div class="px-6 py-6 space-y-4">
+                <div>
+                    <label for="nom_equipe" class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                    <input name="nom_equipe" id="nom_equipe" v-model="selectedEquipe.nom_equipe" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label for="specialisation" class="block text-sm font-medium text-gray-700 mb-1">Specialisation</label>
+                    <input name="specialisation" id="specialisation" v-model="selectedEquipe.specialisation" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label for="capacite" class="block text-sm font-medium text-gray-700 mb-1">Capacite</label>
+                    <input type="number" name="capacite" id="capacite" max="8" min="2" v-model="selectedEquipe.capacite" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Chef d'Equipe</label>
+                    <select v-model="selectedEquipe.chef_de_equipe" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                        <option value="" disabled>Chef d'Equipe</option>
+                        <option v-for="t in allTravailleurs" :key="t.id_travailleur" :value="t.id_travailleur">{{ t.nom }} {{ t.prenom }}</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Equipe Parent</label>
+                    <select v-model="selectedEquipe.parent_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                        <option value="" disabled>Equipe</option>
+                        <option v-for="e in equipes" :key="e.id_equipe" :value="e.id_equipe">{{ e.nom_equipe }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button @click="afficherFormulaireUpdate = !afficherFormulaireUpdate;modEquipe()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+            </div>
+        </form>
+    </div>
+
+    <div v-if="afficherFormulaireDelete" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 px-6 py-8 text-center">
+            <div class="flex justify-center mb-3">
+                <span class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-500 text-2xl">
+                    <i class="icofont-warning-alt"></i>
+                </span>
+            </div>
+            <p class="text-lg font-semibold text-gray-800 mb-6">Valider la suppression ?</p>
+            <div class="flex justify-center gap-3">
+                <button type="submit" @click="afficherFormulaireDelete = !afficherFormulaireDelete;deleteEquipe()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg py-2.5 px-5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+                <button @click="afficherFormulaireDelete = !afficherFormulaireDelete;" class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg py-2.5 px-5 transition-all"><i class="icofont-close"></i> Annuler</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+<script src="page_equipe.js" type="module"></script>
+<script src="../shared/auth.js" type="module"></script>
+</body>
+</html>

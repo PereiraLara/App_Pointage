@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>heures_du_jour</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../assets/fonts/icofont/icofont.min.css">
+    <script src="../shared/menu.js"></script>
+    <script src="../shared/auth.js"></script>
+</head>
+<body class="bg-gray-50">
+<div id="app" class="p-4 h-svh overflow-clip">
+    <app-menu :user="connectedTravailleur"></app-menu>
+
+    <header class="flex pl-15 pt-8 justify-center items-center p-4 gap-2">
+        <div class="calendar-navigation">
+            <span @click="changeDay(-1)"
+                  class="icofont-simple-left size-16 cursor-pointer px-4 py-2 rounded-full text-gray-500 hover:text-sky-500 hover:bg-sky-50 transition-colors">
+            </span>
+        </div>
+        <div class="flex flex-row items-baseline gap-1">
+            <p class="font-bold size-2xl text-gray-800">Encodage du</p>
+            <input type="date"
+                   :value="`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`"
+                   @change="jumpToDate($event.target.value)" class="font-bold size-2xl text-gray-800 pl-1 focus:outline-sky-500 transition-colors bg-transparent"
+            />
+        </div>
+        <div class="calendar-navigation">
+            <span @click="changeDay(1)"
+                  class="icofont-simple-right size-16 cursor-pointer px-4 py-2 rounded-full text-gray-500 hover:text-sky-500 hover:bg-sky-50 transition-colors">
+            </span>
+        </div>
+    </header>
+    <span v-if="isFerie"
+          class="text-sm font-semibold text-gray-500 bg-gray-100 rounded px-2 py-1 mb-2 flex justify-self-center">
+                Jour férié — encodage désactivé
+    </span>
+
+    <div class="h-2/3 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+        <table class="w-full table-auto border-collapse">
+            <thead>
+            <tr class="bg-amber-50 sticky fixed h-12 top-0 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide shadow-sm">
+                <th class="pl-8 px-4">No Travailleur</th>
+                <th class="px-4">Nom</th>
+                <th class="px-4">Prestation</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+            <tr v-for="travailleur in travailleurs" :key="travailleur.id_travailleur" class="hover:bg-sky-50 transition-colors">
+                <td class="pl-8 px-4 py-2.5 font-medium text-gray-700">{{travailleur.id_travailleur}}</td>
+                <td class="px-4 py-2.5 text-gray-800">{{travailleur.nom}}</td>
+                <td class="px-4 py-2.5">
+                    <input type="text" list="codes"
+                           v-model="travailleur.jour"
+                           :disabled="isFerie"
+                           :class="isFerie
+                               ? 'border border-gray-300 rounded-lg px-2 py-1.5 w-full bg-gray-100 text-gray-400 cursor-not-allowed'
+                               : 'border border-gray-300 rounded-lg px-2 py-1.5 w-full focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition'"
+                    />
+                    <datalist id="codes" >
+                        <option v-for="code in codes" :key="code.id_code" :value="code.nom_code"></option>
+                    </datalist>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <button @click="setHeures()"
+            :disabled="isFerie"
+            :class="isFerie
+                ? 'bg-gray-300 m-4 px-6 py-3 flex justify-center place-self-center w-1/3 text-gray-400 rounded-lg cursor-not-allowed'
+                : 'flex justify-center place-self-center m-4 p-4 bg-blue-400 hover:bg-blue-500 w-1/3 text-white font-medium rounded-lg shadow-sm hover:shadow-md'">
+        <i v-if="!isFerie" class="icofont-save pt-1 mr-2"></i>
+        <p>Sauver</p>
+    </button>
+  </div>
+  <script src="heures_du_jour.js"></script>
+</body>
+</html>

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>feries</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../shared/menu.js"></script>
+  <link rel="stylesheet" href="../assets/fonts/icofont/icofont.min.css">
+</head>
+<body>
+<div id="app" class="p-4 h-svh overflow-clip">
+  <app-menu :user="connectedTravailleur"></app-menu>
+
+<!--  Tab bar + add button -->
+  <div class="flex items-center justify-between border-b mb-4">
+    <div class="flex">
+      <button type="button"
+              @click="activeTab = 'fixes'"
+              :class="activeTab === 'fixes'
+                ? 'border-b-2 border-blue-600 text-blue-600 font-semibold'
+                : 'text-gray-500 hover:text-gray-700'"
+              class="px-6 py-2 -mb-px transition-colors">
+        <i class="icofont-calendar mr-1"></i>Jours Fixes
+      </button>
+      <button type="button"
+              @click="activeTab = 'mobiles'"
+              :class="activeTab === 'mobiles'
+                ? 'border-b-2 border-blue-600 text-blue-600 font-semibold'
+                : 'text-gray-500 hover:text-gray-700'"
+              class="px-6 py-2 -mb-px transition-colors">
+        <i class="icofont-refresh mr-1"></i>Jours Mobiles
+      </button>
+    </div>
+    <div v-if="isAdmin" class="pb-1">
+      <button v-if="activeTab === 'fixes'" type="button"
+              class="bg-sky-400 text-white font-medium rounded-lg py-2 px-4 hover:bg-sky-700"
+              @click="afficherFormulaireAjout = true; resetFormFixes()">
+        <i class="icofont-ui-add"></i> Ajouter un Férié Fixe
+      </button>
+      <button v-if="activeTab === 'mobiles'" type="button"
+              class="bg-sky-400 text-white font-medium rounded-lg py-2 px-4 hover:bg-sky-700"
+              @click="afficherFormulaireAjoutMobile = true; resetFormMobiles()">
+        <i class="icofont-ui-add"></i> Ajouter un Férié Mobile
+      </button>
+    </div>
+  </div>
+
+<!--  table feries fixes -->
+  <div v-if="activeTab === 'fixes'" class="h-3/4 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+    <table class="w-full table-auto border-collapse">
+      <thead>
+      <tr class="bg-amber-50 sticky fixed top-0 h-11 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide shadow-sm">
+        <th class="px-4">Nom</th>
+        <th class="text-center px-4">Date de l'Événement</th>
+        <th class="hidden lg:table-cell p-2 text-center">Légal</th>
+
+        <th class="text-center px-4">Début Validité</th>
+        <th class="text-center px-4">Fin Validité</th>
+      </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+      <tr v-if="feries.length === 0">
+        <td colspan="6" class="p-4 text-center text-gray-400">Aucun férié mobile enregistré</td>
+      <tr v-for="ferie in feries"
+          :key="ferie.id_ferie"
+          @contextmenu.prevent="openContextMenu($event, ferie, 'fixes')"
+          :class="['cursor-pointer hover:bg-sky-50 transition-colors',
+                  { 'bg-sky-100': contextMenuVisible && contextMenuType === 'fixes' && selectedFerie && selectedFerie.id_ferie === ferie.id_ferie },
+                  { 'bg-gray-200 hover:bg-gray-300': ferie.date_fin != null && ferie.date_fin < current_day }
+                  ]"
+      >
+        <td class="px-4 py-2.5 text-gray-800">{{ferie.nom_ferie}}</td>
+        <td class="text-center px-4 py-2.5 text-gray-500">{{ formatDateMonth(ferie.event_date) }}</td>
+        <td class="p-2 text-center">
+            <span :class="ferie.legal ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
+                  class="px-2 py-0.5 rounded-full text-xs font-medium">
+              {{ ferie.legal ? 'Légal' : 'Non-légal' }}
+            </span>
+        </td>
+        <td class="text-center px-4 py-2.5 text-gray-500">{{ formatDate(ferie.date_debut) }}</td>
+        <td class="text-center px-4 py-2.5 text-gray-500">{{ formatDate(ferie.date_fin) }}</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+<!--  table feries mobiles -->
+  <p v-if="activeTab === 'mobiles'" class="text-xs text-gray-400 mb-2">
+    <i class="icofont-info-circle"></i>
+    Le décalage est exprimé en jours depuis le Dimanche de Pâques de l'année concernée.
+  </p>
+  <div v-if="activeTab === 'mobiles'" class="h-3/4 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+    <table class="w-full table-auto border-collapse">
+      <thead>
+      <tr class="bg-amber-50 sticky fixed top-0 h-11 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide shadow-sm">
+        <th class="px-4">Nom</th>
+        <th class="text-center px-4">Décalage (j)</th>
+        <th class="hidden lg:table-cell p-2 text-center">Légal</th>
+        <th class="text-center px-4">Début Validité</th>
+        <th class="text-center px-4">Fin Validité</th>
+      </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+      <tr v-if="feriesMobiles.length === 0">
+        <td colspan="6" class="p-4 text-center text-gray-400">Aucun férié mobile enregistré</td>
+      <tr v-for="ferieMobile in feriesMobiles"
+          :key="ferieMobile.id_ferie"
+          @click="goToPageFerie(ferieMobile.id_ferie)"
+          @contextmenu.prevent="openContextMenu($event, ferieMobile, 'mobiles')"
+          :class="['cursor-pointer hover:bg-sky-50 transition-colors',
+                  { 'bg-sky-100': contextMenuVisible && contextMenuType === 'mobiles' && selectedFerieMobile && selectedFerieMobile.id_ferie === ferieMobile.id_ferie },
+                  { 'bg-gray-200 hover:bg-gray-300': ferieMobile.date_fin != null && ferieMobile.date_fin < current_day }
+                  ]"
+      >
+        <td class="px-4 py-2.5 text-gray-800">{{ferieMobile.nom_ferie}}</td>
+        <td class="text-center px-4 py-2.5 text-gray-500">
+          {{ ferieMobile.decalage_jours >= 0 ? '+' + ferieMobile.decalage_jours : ferieMobile.decalage_jours }}
+        </td>
+        <td class="p-2 text-center">
+            <span :class="ferieMobile.legal ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
+                  class="px-2 py-0.5 rounded-full text-xs font-medium">
+              {{ ferieMobile.legal ? 'Légal' : 'Non-légal' }}
+            </span>
+        </td>
+        <td class="text-center px-4 py-2.5 text-gray-500">{{ formatDate(ferieMobile.date_debut) }}</td>
+        <td class="text-center px-4 py-2.5 text-gray-500">{{ formatDate(ferieMobile.date_fin) }}</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- context menu -->
+  <div v-if="contextMenuVisible && isAdmin"
+       :style="{ top: contextMenuY + 'px', left: contextMenuX + 'px' }"
+       class="fixed bg-white border border-gray-100 shadow-xl rounded-lg overflow-hidden z-50 divide-y divide-gray-100 min-w-[160px]"
+  >
+    <div class="px-4 py-2.5 flex items-center gap-2 text-sm text-gray-700 hover:bg-violet-50 cursor-pointer transition-colors"
+         @click="openUpdateForm">
+      <i class="icofont-ui-edit text-violet-500"></i> Modifier
+    </div>
+
+    <div v-if="(contextMenuType === 'fixes' && selectedFerie.date_fin == null) ||
+               (contextMenuType === 'mobiles' && selectedFerieMobile.date_fin == null)"
+         class="px-4 py-2.5 flex items-center gap-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+         @click="openDeleteForm">
+      <i class="icofont-ui-delete"></i> Supprimer
+    </div>
+  </div>
+
+<!--  FORMS FERIE FIXE -->
+<!--  create ferie fixe -->
+  <div v-if="afficherFormulaireAjout" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+    <form @submit.prevent="createFerie" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+      <div class="flex justify-between items-center bg-gradient-to-r from-sky-500 to-sky-600 px-6 py-4">
+        <h2 class="text-xl font-semibold text-white flex items-center gap-2"><i class="icofont-ui-add"></i> Ajouter un Férié Fixe</h2>
+        <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors" @click="afficherFormulaireAjout = !afficherFormulaireAjout"></i>
+      </div>
+      <div class="px-6 py-6 space-y-4">
+        <div>
+          <label for="nom_ferie" class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+          <input id="nom_ferie" v-model="nom_ferie" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Date de l'Eventement</label>
+          <div class="flex gap-2">
+            <select v-model="event_day" class="w-1/2 border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+              <option value="" disabled>Jour</option>
+              <option v-for="d in maxDayForMonth(event_month)" :key="d" :value="String(d).padStart(2, '0')">{{ d }}</option>
+            </select>
+            <select v-model="event_month" class="w-1/2 border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+              <option value="" disabled>Mois</option>
+              <option v-for="m in mois" :key="m.value" :value="m.value">{{ m.label }}</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for="date_debut" class="block text-sm font-medium text-gray-700 mb-1"> Début Validité</label>
+          <input id="date_debut" type="date" :max="date_fin" v-model="date_debut" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+        </div>
+        <div>
+          <label for="date_fin" class="block text-sm font-medium text-gray-700 mb-1"> Fin Validité</label>
+          <input id="date_fin" v-model="date_fin" type="date" :min="date_debut || event_date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
+        </div>
+        <div class="col-span-2 flex items-center gap-2">
+          <input type="checkbox" v-model="legal" :true-value="1" :false-value="0"
+                 class="w-4 h-4">
+          <span class="text-sm">Jour férié légal</span>
+        </div>
+      </div>
+      <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+        <button type="submit" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+      </div>
+    </form>
+  </div>
+
+<!-- update ferie fixe -->
+  <div v-if="afficherFormulaireUpdate" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+    <form @submit.prevent="modFerie" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+      <div class="flex justify-between items-center bg-gradient-to-r from-violet-400 to-violet-500 px-6 py-4">
+        <h2 class="text-xl font-semibold text-white flex items-center gap-2"><i class="icofont-ui-edit"></i> Actualiser Férié Fixe No {{selectedFerie.id_ferie}}</h2>
+        <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors" @click="afficherFormulaireUpdate = !afficherFormulaireUpdate"></i>
+      </div>
+      <div class="px-6 py-6 space-y-4">
+        <div>
+          <label for="nom_ferie" class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+          <input name="nom_ferie" v-model="selectedFerie.nom_ferie" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Date de l'Evenement</label>
+          <div class="flex gap-2">
+            <select v-model="selectedFerie.event_day" class="w-1/2 border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+              <option value="" disabled>Jour</option>
+              <option v-for="d in maxDayForMonth(selectedFerie.event_month)" :key="d" :value="String(d).padStart(2, '0')">{{ d }}</option>
+            </select>
+            <select v-model="selectedFerie.event_month" class="w-1/2 border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+              <option value="" disabled>Mois</option>
+              <option v-for="m in mois" :key="m.value" :value="m.value">{{ m.label }}</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for="date_debut" class="block text-sm font-medium text-gray-700 mb-1"> Début Validité</label>
+          <input name="date_debut" type="date" :max="selectedFerie.date_fin" v-model="selectedFerie.date_debut" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+        </div>
+        <div>
+          <label for="date_fin" class="block text-sm font-medium text-gray-700 mb-1"> Fin Validité</label>
+          <input type="date" :min="selectedFerie.date_debut || selectedFerie.event_date" name="date_fin" v-model="selectedFerie.date_fin" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition">
+        </div>
+        <div>
+          <label class="flex items-center">Légal</label>
+          <div class="col-span-2 flex items-center gap-2">
+            <input type="checkbox" v-model="selectedFerie.legal" :true-value="1" :false-value="0"
+                   class="w-4 h-4">
+            <span class="text-sm">Jour férié légal</span>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+        <button type="submit" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+      </div>
+    </form>
+  </div>
+
+
+<!--  FORMS FERIE MOBILE -->
+<!--  create ferie mobile -->
+  <div v-if="afficherFormulaireAjoutMobile" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+    <form @submit.prevent="createFerieMobile" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+      <div class="flex justify-between items-center bg-gradient-to-r from-sky-500 to-sky-600 px-6 py-4">
+        <h2 class="text-xl font-semibold text-white flex items-center gap-2"><i class="icofont-ui-add"></i> Ajouter un Férié Mobile</h2>
+        <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors" @click="afficherFormulaireAjoutMobile = !afficherFormulaireAjoutMobile"></i>
+      </div>
+      <p class="text-xs text-gray-400 px-2 py-1">
+        Décalage = nombre de jours depuis le Dimanche de Pâques.
+      </p>
+      <div class="px-6 py-4 space-y-4">
+        <div>
+          <label for="nom_ferie_mobile" class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+          <input id="nom_ferie_mobile" v-model="nom_ferie_mobile" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+        </div>
+        <div>
+          <label for="decalage_jours" class="block text-sm font-medium text-gray-700 mb-1">Décalage (jours)</label>
+          <input id="decalage_jours" type="number" step="1" v-model="decalage_jours" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+        </div>
+        <div>
+          <label for="date_debut_mobile" class="block text-sm font-medium text-gray-700 mb-1"> Début Validité</label>
+          <input id="date_debut_mobile" type="date" :max="date_fin_mobile" v-model="date_debut_mobile" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+        </div>
+        <div>
+          <label for="date_fin_mobile" class="block text-sm font-medium text-gray-700 mb-1"> Fin Validité</label>
+          <input id="date_fin_mobile" v-model="date_fin_mobile" type="date" :min="date_debut_mobile" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
+        </div>
+        <div class="col-span-2 flex items-center gap-2">
+          <input type="checkbox" v-model="legal" :true-value="1" :false-value="0"
+                 class="w-4 h-4">
+          <span class="text-sm">Jour férié légal</span>
+        </div>
+      </div>
+      <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+        <button type="submit" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+      </div>
+    </form>
+  </div>
+
+<!--  update ferie mobile -->
+  <div v-if="afficherFormulaireUpdateMobile" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+    <form @submit.prevent="modFerieMobile" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+      <div class="flex justify-between items-center bg-gradient-to-r from-violet-400 to-violet-500 px-6 py-4">
+        <h2 class="text-xl font-semibold text-white flex items-center gap-2"><i class="icofont-ui-edit"></i> Actualiser Férié Mobile No {{selectedFerieMobile.id_ferie}}</h2>
+        <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors" @click="afficherFormulaireUpdateMobile = !afficherFormulaireUpdateMobile"></i>
+      </div>
+      <div class="px-6 py-6 space-y-4">
+        <div>
+          <label for="nom_ferie_mobile" class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+          <input name="nom_ferie_mobile" v-model="selectedFerieMobile.nom_ferie" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+        </div>
+        <div>
+          <label for="decalage_jours" class="block text-sm font-medium text-gray-700 mb-1">Décalage (jours)</label>
+          <input name="decalage_jours" type="number" step="1" v-model="selectedFerieMobile.decalage_jours" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+        </div>
+        <div>
+          <label for="date_debut_mobile" class="block text-sm font-medium text-gray-700 mb-1"> Début Validité</label>
+          <input name="date_debut_mobile" type="date" :max="selectedFerieMobile.date_fin" v-model="selectedFerieMobile.date_debut" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+        </div>
+        <div>
+          <label for="date_fin_mobile" class="block text-sm font-medium text-gray-700 mb-1"> Fin Validité</label>
+          <input type="date" :min="selectedFerieMobile.date_debut" name="date_fin_mobile" v-model="selectedFerieMobile.date_fin" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition">
+        </div>
+        <div>
+          <label class="flex items-center">Légal</label>
+          <div class="col-span-2 flex items-center gap-2">
+            <input type="checkbox" v-model="selectedFerieMobile.legal" :true-value="1" :false-value="0"
+                   class="w-4 h-4">
+            <span class="text-sm">Jour férié légal</span>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+        <button type="submit" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+      </div>
+    </form>
+  </div>
+
+  <div v-if="afficherFormulaireDelete" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+    <form class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 px-6 py-8 text-center">
+      <div class="flex justify-center mb-3">
+        <span class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-500 text-2xl">
+          <i class="icofont-warning-alt"></i>
+        </span>
+      </div>
+      <p class="text-lg font-semibold text-gray-800 mb-6">Valider la suppression ?</p>
+      <div class="flex justify-center gap-3">
+        <button type="button" @click="deleteFerie()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg py-2.5 px-5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+        <button type="button" @click="afficherFormulaireDelete = !afficherFormulaireDelete;" class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg py-2.5 px-5 transition-all"><i class="icofont-close"></i> Annuler</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+<script src="feries.js" type="module"></script>
+<script src="../shared/auth.js"></script>
+</body>
+</html>

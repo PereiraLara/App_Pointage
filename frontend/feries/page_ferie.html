@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>pageFerie</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../assets/fonts/icofont/icofont.min.css">
+  <script src="../shared/menu.js"></script>
+  <script src="../shared/auth.js" type="module"></script>
+</head>
+<body>
+<div id="app" class="p-4 h-svh overflow-clip">
+  <app-menu :user="connectedTravailleur"></app-menu>
+
+  <div>
+    <button class="bg-violet-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-violet-700"
+            @click="openUpdateForm">
+      <i  class="icofont-ui-edit"></i> Modifier
+    </button>
+    <button class="bg-red-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-red-700 absolute right-0"
+            @click="openDeleteForm">
+      <i  class="icofont-ui-delete"></i> Supprimer Ferie
+    </button>
+  </div>
+
+  <p class="flex justify-self-center font-bold size-2xl py-4 -mt-4 lg:hidden text-gray-800">Profil Ferie no {{ selectedFerie.id_ferie }}</p>
+
+  <div class="grid grid-cols-7 h-3/4 lg:inline hidden">
+    <div class="col-span-3 col-start-2 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+      <table class="w-full table-auto border-collapse">
+        <thead>
+        <tr class="bg-amber-50 sticky fixed top-0 h-11 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide shadow-sm">
+            <th class="px-4">Nom</th>
+            <th class="text-center px-4">Décalage (j)</th>
+            <th class="hidden lg:table-cell p-2 text-center">Légal</th>
+            <th class="text-center px-4">Début Validité</th>
+            <th class="text-center px-4">Fin Validité</th>
+        </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+        <tr>
+          <td class="px-4 py-2.5 text-gray-800">{{ selectedFerie.nom_ferie }}</td>
+            <td class="text-center px-4 py-2.5 text-gray-500">
+                {{ selectedFerie.decalage_jours >= 0 ? '+' + selectedFerie.decalage_jours : selectedFerie.decalage_jours }}
+            </td>
+            <td class="p-2 text-center">
+            <span :class="selectedFerie.legal ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
+                  class="px-2 py-0.5 rounded-full text-xs font-medium">
+              {{ selectedFerie.legal ? 'Légal' : 'Non-légal' }}
+            </span>
+            </td>
+            <td class="text-center px-4 py-2.5 text-gray-500">{{ formatDate(selectedFerie.date_debut) }}</td>
+            <td class="text-center px-4 py-2.5 text-gray-500">{{ formatDate(selectedFerie.date_fin) }}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="lg:hidden">
+    <div class="col-span-3 col-start-2 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+      <table class="w-full table-auto border-collapse">
+        <tr class="divide-x divide-gray-100">
+          <th class="bg-amber-50 px-4 py-2.5 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide">Nom</th>
+          <td class="px-4 py-2.5 text-gray-800">{{ selectedFerie.nom_ferie }}</td>
+        </tr>
+        <tr class="divide-x divide-gray-100 border-t border-gray-100">
+          <th class="bg-amber-50 px-4 py-2.5 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide">No Registre National</th>
+            <td class="text-center px-4 py-2.5 text-gray-500">
+                {{ selectedFerie.decalage_jours >= 0 ? '+' + selectedFerie.decalage_jours : selectedFerie.decalage_jours }}
+            </td>
+        </tr>
+        <tr class="divide-x divide-gray-100 border-t border-gray-100">
+          <th class="bg-amber-50 px-4 py-2.5 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide">Début Validité</th>
+          <td class="px-4 py-2.5 text-gray-500">{{ selectedFerie.date_debut }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <br>
+  <h3 class="font-semibold text-gray-800 text-lg">Dates Actuelles:</h3>
+  <h3 v-if="joursFeries.length === 0" class="text-gray-500">Aucune date Assignée</h3>
+<div v-else class="grid grid-cols-7 lg:grid-cols-4 h-1/2">
+    <div class="col-span-7 lg:col-span-2 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+        <table class="w-full table-auto border-collapse">
+            <thead>
+                <tr class="bg-amber-50 sticky fixed top-0 h-11 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide shadow-sm">
+                  <th class="text-center lg:text-left px-8">Date</th>
+                  <th class="px-4">Annee</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr v-for="jour in joursFeries"
+                    :key="jour.annee"
+                >
+                  <td class="text-center lg:text-left px-8 py-2.5 text-gray-800">{{ jour.date_ferie }}</td>
+                  <td class="px-4 py-2.5 text-gray-500">{{ jour.annee }}</td>
+                </tr>
+            </tbody>
+      </table>
+    </div>
+  </div>
+
+    <!--  form update -->
+    <div v-if="afficherFormulaireUpdate" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form @submit.prevent="modFerie" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <div class="flex justify-between items-center bg-gradient-to-r from-violet-400 to-violet-500 px-6 py-4">
+                <h2 class="text-xl font-semibold text-white flex items-center gap-2"><i class="icofont-ui-edit"></i> Actualiser Férié Mobile No {{selectedFerie.id_ferie}}</h2>
+                <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors" @click="afficherFormulaireUpdate = !afficherFormulaireUpdate"></i>
+            </div>
+            <div class="px-6 py-6 space-y-4">
+                <div>
+                    <label for="nom_ferie_mobile" class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                    <input name="nom_ferie_mobile" v-model="selectedFerie.nom_ferie" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label for="decalage_jours" class="block text-sm font-medium text-gray-700 mb-1">Décalage (jours)</label>
+                    <input name="decalage_jours" type="number" min="0" step="1" v-model="selectedFerie.decalage_jours" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label for="date_debut_mobile" class="block text-sm font-medium text-gray-700 mb-1"> Début Validité</label>
+                    <input name="date_debut_mobile" type="date" :max="selectedFerie.date_fin" v-model="selectedFerie.date_debut" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label for="date_fin_mobile" class="block text-sm font-medium text-gray-700 mb-1"> Fin Validité</label>
+                    <input type="date" :min="selectedFerie.date_debut" name="date_fin_mobile" v-model="selectedFerie.date_fin" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition">
+                </div>
+                <div>
+                    <label class="flex items-center">Légal</label>
+                    <div class="col-span-2 flex items-center gap-2">
+                        <input type="checkbox" v-model="selectedFerie.legal" :true-value="1" :false-value="0"
+                               class="w-4 h-4">
+                        <span class="text-sm">Jour férié légal</span>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button type="submit" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+            </div>
+        </form>
+    </div>
+
+<!--    form delete -->
+    <div v-if="afficherFormulaireDelete" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 px-6 py-8 text-center">
+            <div class="flex justify-center mb-3">
+        <span class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-500 text-2xl">
+          <i class="icofont-warning-alt"></i>
+        </span>
+            </div>
+            <p class="text-lg font-semibold text-gray-800 mb-6">Valider la suppression ?</p>
+            <div class="flex justify-center gap-3">
+                <button type="button" @click="deleteFerie()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg py-2.5 px-5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+                <button type="button" @click="afficherFormulaireDelete = !afficherFormulaireDelete;" class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg py-2.5 px-5 transition-all"><i class="icofont-close"></i> Annuler</button>
+            </div>
+        </form>
+    </div>
+
+
+</div>
+<script src="page_ferie.js" type="module"></script>
+</body>
+</html>

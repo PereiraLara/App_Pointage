@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>codes</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../shared/menu.js"></script>
+    <script src="../shared/auth.js"></script>
+    <link rel="stylesheet" href="../assets/fonts/icofont/icofont.min.css">
+</head>
+<body>
+<div id="app" class="p-4 h-svh overflow-clip">
+    <app-menu :user="connectedTravailleur"></app-menu>
+
+    <div>
+        <!-- ajout equipe -->
+        <button v-if="isAdmin" class="bg-sky-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-sky-700"
+                @click="afficherFormulaireAjout = !afficherFormulaireAjout; resetForm();">
+            <i  class="icofont-ui-add"></i> Ajouter un Code
+        </button>
+    </div>
+
+    <div class="h-3/4 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+        <table class="w-full table-auto border-collapse">
+            <thead>
+            <tr class="bg-amber-50 sticky fixed top-0 h-11 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide shadow-sm">
+                <th class="px-8">Nom</th>
+                <th class="hidden lg:table-cell px-4 text-center">Valeur</th>
+                <th class="px-4">Description</th>
+                <th class="px-4 text-center">Date Debut</th>
+                <th class="px-4 text-center">Date Fin</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+            <tr v-for="code in codesFiltered"
+                :key="code.id_code"
+                @click="goToPageCode(code.id_code)"
+                @contextmenu.prevent="openContextMenu($event, code)"
+                :class="['cursor-pointer hover:bg-sky-50 transition-colors',
+                        { 'bg-blue-100': isRowSelected(code) },
+                        { 'bg-gray-200 hover:bg-gray-300': code.date_fin != null }
+                        ]"
+            >
+                <td class="px-8 py-2.5 font-medium text-gray-700">{{code.nom_code}}</td>
+                <td class="hidden lg:table-cell text-center px-4 py-2.5 text-gray-500">{{code.valeur}}</td>
+                <td class="px-4 py-2.5 text-gray-800">{{code.description}}</td>
+                <td class="text-center px-4 py-2.5 text-gray-500">{{ formatDate(code.date_debut) }}</td>
+                <td class="text-center px-4 py-2.5 text-gray-500">{{ formatDate(code.date_fin) }}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- context menu -->
+    <div v-if="contextMenuVisible && isAdmin"
+         :style="{ top: contextMenuY + 'px', left: contextMenuX + 'px' }"
+         class="fixed bg-white border border-gray-100 shadow-xl rounded-lg overflow-hidden z-50 divide-y divide-gray-100 min-w-[160px]"
+    >
+        <div v-if="selectedCode.date_fin == null"
+             class="px-4 py-2.5 flex items-center gap-2 text-sm text-gray-700 hover:bg-sky-50 cursor-pointer transition-colors"
+             @click="openUpdateForm">
+            <i class="icofont-ui-edit text-sky-500"></i> Modifier
+        </div>
+        <!-- Désactiver : seulement si actif -->
+        <div v-if="selectedCode.date_fin == null"
+             class="px-4 py-2.5 flex items-center gap-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+             @click="openDeleteForm">
+            <i class="icofont-ui-delete"></i> Désactiver
+        </div>
+        <!-- Réactiver : seulement si clôturé -->
+        <div v-if="selectedCode.date_fin != null"
+             class="px-4 py-2.5 flex items-center gap-2 text-sm text-green-700 hover:bg-green-50 cursor-pointer transition-colors"
+             @click="openReactiverForm">
+            <i class="icofont-refresh"></i> Réactiver
+        </div>
+    </div>
+
+    <div v-if="afficherFormulaireAjout" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form @submit.prevent="createCode" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <div class="flex justify-between items-center bg-gradient-to-r from-sky-500 to-sky-600 px-6 py-4">
+                <h2 class="text-xl font-semibold text-white flex items-center gap-2"><i class="icofont-ui-add"></i> Ajouter un Code</h2>
+                <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors" @click="afficherFormulaireAjout = !afficherFormulaireAjout"></i>
+            </div>
+            <div class="px-6 py-6 space-y-4">
+                <div>
+                    <label for="nom_code" class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                    <input id="nom_code" v-model="nom_code" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                </div>
+                <div>
+                    <label for="valeur" class="block text-sm font-medium text-gray-700 mb-1">Valeur (% a payer)</label>
+                    <input type="number" min="0" id="valeur" v-model="valeur" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                </div>
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <input id="description" v-model="description" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                </div>
+                <div>
+                    <label for="date_debut" class="block text-sm font-medium text-gray-700 mb-1">Date de Debut</label>
+                    <input id="date_debut" type="date" :max="date_fin" v-model="date_debut" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                </div>
+                <div>
+                    <label for="date_fin" class="block text-sm font-medium text-gray-700 mb-1">Date de Fin</label>
+                    <input id="date_fin" v-model="date_fin" type="date" :min="date_debut" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition">
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button type="submit" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+            </div>
+        </form>
+    </div>
+
+    <div v-if="afficherFormulaireUpdate" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <div class="flex justify-between items-center bg-gradient-to-r from-violet-400 to-violet-500 px-6 py-4">
+                <h2 class="text-xl font-semibold text-white flex items-center gap-2"><i class="icofont-ui-edit"></i> Actualiser code "{{selectedCode.nom_code}}"</h2>
+                <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors" @click="afficherFormulaireUpdate = !afficherFormulaireUpdate"></i>
+            </div>
+            <div class="px-6 py-6 space-y-4">
+                <div>
+                    <label for="nom_code" class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                    <input name="nom_code" v-model="selectedCode.nom_code" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label for="valeur" class="block text-sm font-medium text-gray-700 mb-1">Valeur</label>
+                    <input type="number" min="0" name="valeur" v-model="selectedCode.valeur" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <input name="description" v-model="selectedCode.description" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label for="date_debut" class="block text-sm font-medium text-gray-700 mb-1">Date de Debut</label>
+                    <input name="date_debut" type="date" :max="selectedCode.date_fin" v-model="selectedCode.date_debut" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label for="date_fin" class="block text-sm font-medium text-gray-700 mb-1">Date de Fin</label>
+                    <input type="date" :min="selectedCode.date_debut" name="date_fin" v-model="selectedCode.date_fin" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition">
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button type="button" @click="afficherFormulaireUpdate = !afficherFormulaireUpdate;modCode()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+            </div>
+        </form>
+    </div>
+
+    <div v-if="afficherFormulaireDelete" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 px-6 py-8 text-center">
+            <div class="flex justify-center mb-3">
+                <span class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-500 text-2xl">
+                    <i class="icofont-warning-alt"></i>
+                </span>
+            </div>
+            <p class="text-lg font-semibold text-gray-800 mb-6">Valider la suppression ?</p>
+            <div class="flex justify-center gap-3">
+                <button type="button" @click="afficherFormulaireDelete = !afficherFormulaireDelete;deleteCode()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg py-2.5 px-5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+                <button @click="afficherFormulaireDelete = !afficherFormulaireDelete;" class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg py-2.5 px-5 transition-all"><i class="icofont-close"></i> Annuler</button>
+            </div>
+        </form>
+    </div>
+
+    <div v-if="afficherFormulaireReactiver" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form @submit.prevent="reactiverCode" class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            <div class="flex justify-between items-center bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+                <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                    <i class="icofont-refresh"></i> Réactiver "{{ selectedCode.nom_code }}"
+                </h2>
+                <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors"
+                   @click="afficherFormulaireReactiver = false"></i>
+            </div>
+            <div class="px-6 py-6 space-y-4">
+                <p class="text-sm text-gray-500">
+                    Clôturé le <strong>{{ formatDate(selectedCode.date_fin) }}</strong>.<br>
+                    Une nouvelle période active sera créée à partir de la date choisie. Le trou dans le log est conservé.
+                </p>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date de réactivation</label>
+                    <input type="date"
+                           v-model="reactiverDateDebut"
+                           :min="reactiverDateMin"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 transition"
+                           required>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button type="submit" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Réactiver</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+<script src="codes.js" type="module"></script>
+</body>
+</html>

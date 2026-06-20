@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>email</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/fonts/icofont/icofont.min.css">
+    <script src="shared/menu.js"></script>
+</head>
+<body >
+    <div id="app" class="bg-gray-100 flex items-center justify-center h-screen">
+        <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
+            <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
+            <form action="#" method="GET" @submit.prevent="connectUser">
+                <div class="mb-4">
+                    <label for="email" class="block text-gray-700">Email</label>
+                    <input v-model="email" type="email" id="email" name="email" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-gray-700">Password</label>
+                    <input v-model="password" type="password" id="password" name="password" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <button class="w-full bg-blue-500 text-white font-medium py-2 rounded-lg hover:bg-blue-600"><i class="icofont-sign-in"></i>Connexion</button>
+            </form>
+        </div>
+    </div>
+    <script src="app.js"></script>
+    <script src="shared/auth.js"></script>
+</body>
+</html>

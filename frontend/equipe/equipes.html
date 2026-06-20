@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>equipe</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../shared/menu.js"></script>
+    <link rel="stylesheet" href="../assets/fonts/icofont/icofont.min.css">
+</head>
+<body>
+<div id="app" class="p-4 h-svh overflow-clip">
+    <app-menu :user="connectedTravailleur"></app-menu>
+
+    <div>
+        <!-- ajout equipe -->
+        <button v-if="isAdmin" class="bg-sky-400 mb-4 mr-4 text-white font-medium rounded-lg py-2 px-4 hover:bg-sky-700"
+                @click="afficherFormulaireAjout = !afficherFormulaireAjout; resetForm();">
+            <i  class="icofont-ui-add"></i> Ajouter une Equipe
+        </button>
+    </div>
+
+    <div class="h-3/4 overflow-y-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+        <table class="w-full table-auto border-collapse">
+            <thead>
+            <tr class="bg-amber-50 sticky fixed top-0 h-11 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide shadow-sm">
+                <th class="px-4">No</th>
+                <th class="px-4">Nom</th>
+                <th class="px-4">Specialisation</th>
+                <th class="text-center hidden lg:table-cell px-4">Capacite</th>
+                <th class="hidden lg:table-cell text-center px-4">Chef de Equipe</th>
+                <th class="lg:hidden text-center px-4">Chef</th>
+                <th class="hidden lg:table-cell text-center px-4">Equipe Parent</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+            <tr v-for="equipe in equipes"
+                :key="equipe.id_equipe"
+                @click="goToPageEquipe(equipe.id_equipe)"
+                @contextmenu.prevent="openContextMenu($event, equipe)"
+                :class="['cursor-pointer hover:bg-sky-50 transition-colors',
+                        { 'bg-gray-200 hover:bg-gray-300': equipe.date_fin != null },
+                        { 'bg-sky-100': contextMenuVisible && selectedEquipe && selectedEquipe.id_equipe === equipe.id_equipe && selectedEquipe.date_fin == null }]"
+            >
+                <td class="px-8 py-2.5 font-medium text-gray-700">{{equipe.id_equipe}}</td>
+                <td class="px-4 py-2.5 text-gray-800">{{equipe.nom_equipe}}</td>
+                <td class="px-4 py-2.5 text-gray-500">{{equipe.specialisation}}</td>
+                <td class="hidden lg:table-cell text-center px-4 py-2.5 text-gray-500">{{equipe.capacite}}</td>
+                <td class="hidden lg:table-cell text-center px-4 py-2.5 text-gray-500">{{equipe.chef_de_equipe}}</td>
+                <td class="lg:hidden text-center px-4 py-2.5 text-gray-500">{{equipe.chef_de_equipe}}</td>
+                <td class="hidden lg:table-cell text-center px-4 py-2.5 text-gray-500">{{equipe.parent_id}}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- context menu -->
+    <div v-if="contextMenuVisible && isAdmin && selectedEquipe.date_fin == null"
+         :style="{ top: contextMenuY + 'px', left: contextMenuX + 'px' }"
+         class="fixed bg-white border border-gray-100 shadow-xl rounded-lg overflow-hidden z-50 divide-y divide-gray-100 min-w-[200px]">
+
+        <div class="px-4 py-2.5 flex items-center gap-2 text-sm text-gray-700 hover:bg-teal-50 cursor-pointer transition-colors"
+             @click="openAssignmentForm">
+            <i class="icofont-ui-user text-teal-500"></i> Assigner travailleurs
+        </div>
+
+        <div class="px-4 py-2.5 flex items-center gap-2 text-sm text-gray-700 hover:bg-violet-50 cursor-pointer transition-colors"
+             @click="openUpdateForm">
+            <i class="icofont-ui-edit text-violet-500"></i> Modifier
+        </div>
+
+        <div class="px-4 py-2.5 flex items-center gap-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+             @click="openDeleteForm">
+            <i class="icofont-ui-delete"></i> Supprimer
+        </div>
+    </div>
+
+    <div v-if="afficherFormulaireAjout" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form @submit.prevent="createEquipe" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <div class="flex justify-between items-center bg-gradient-to-r from-sky-500 to-sky-600 px-6 py-4">
+                <h2 class="text-xl font-semibold text-white flex items-center gap-2"><i class="icofont-ui-add"></i> Ajouter une Equipe</h2>
+                <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors" @click="afficherFormulaireAjout = !afficherFormulaireAjout"></i>
+            </div>
+            <div class="px-6 py-6 space-y-4">
+                <div>
+                    <label for="nom_equipe" class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                    <input id="nom_equipe" v-model="nom_equipe" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                </div>
+                <div>
+                    <label for="specialisation" class="block text-sm font-medium text-gray-700 mb-1">Specialisation</label>
+                    <input id="specialisation" v-model="specialisation" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                </div>
+                <div>
+                    <label for="capacite" class="block text-sm font-medium text-gray-700 mb-1">Capacite</label>
+                    <input type="number" max="8" min="2" id="capacite" v-model="capacite" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Chef d'Equipe</label>
+                    <select v-model="chef_de_equipe" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                        <option value="" disabled>Chef d'Equipe</option>
+                        <option v-for="t in travailleurs" :key="t.id_travailleur" :value="t.id_travailleur">{{ t.nom }} {{ t.prenom }}</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Equipe Parent</label>
+                    <select v-model="parent_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                        <option value="" disabled>Equipe</option>
+                        <option v-for="e in equipes" :key="e.id_equipe" :value="e.id_equipe">{{ e.nom_equipe }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button type="submit" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+            </div>
+        </form>
+    </div>
+
+    <div v-if="formulaireAssignerTravailleur" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form @submit.prevent="assignTravailleur" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 h-3/4 flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4 shrink-0">
+                <h2 class="text-xl font-semibold text-white flex items-center gap-2"><i class="icofont-ui-user"></i> Assigner des Travailleurs — Équipe {{ selectedEquipe.id_equipe }}</h2>
+                <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors" @click="formulaireAssignerTravailleur = !formulaireAssignerTravailleur"></i>
+            </div>
+            <div class="px-6 pt-4 shrink-0">
+                <p class="mb-2 text-sm font-medium"
+                   :class="travailleurs.filter(t=>t.checked).length > selectedEquipe.capacite -1 ? 'text-red-600' : 'text-gray-500'">
+                    {{ travailleurs.filter(t => t.checked).length }} / {{selectedEquipe.capacite - 1}} sélectionnés
+                </p>
+            </div>
+            <div class="overflow-y-auto flex-1 mx-6 border border-gray-200 rounded-lg">
+                <table class="w-full table-auto border-collapse">
+                    <thead>
+                    <tr class="bg-amber-50 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                        <th class="p-2.5 text-center">Sélectionner</th>
+                        <th class="p-2.5">No</th>
+                        <th class="p-2.5">Nom</th>
+                    </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                    <tr v-for="travailleur in travailleurs" :key="travailleur.id_travailleur"
+                        class="hover:bg-teal-50 transition-colors">
+                        <td class="text-center p-2.5">
+                            <input type="checkbox" v-model="travailleur.checked" class="w-4 h-4 accent-teal-500">
+                        </td>
+                        <td class="text-center p-2.5 font-medium text-gray-700">{{ travailleur.id_travailleur }}</td>
+                        <td class="p-2.5 text-gray-800">{{ travailleur.nom }}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end shrink-0">
+                <button type="submit"
+                        :disabled="travailleurs.filter(t=>t.checked).length > selectedEquipe.capacite - 1"
+                        class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+            </div>
+        </form>
+    </div>
+
+    <div v-if="afficherFormulaireUpdate" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <div class="flex justify-between items-center bg-gradient-to-r from-violet-400 to-violet-500 px-6 py-4">
+                <h2 class="text-xl font-semibold text-white flex items-center gap-2"><i class="icofont-ui-edit"></i> Actualiser equipe No {{selectedEquipe.id_equipe}}</h2>
+                <i class="icofont-close-line-circled icofont-2x text-white/80 hover:text-white cursor-pointer transition-colors" @click="afficherFormulaireUpdate = !afficherFormulaireUpdate"></i>
+            </div>
+            <div class="px-6 py-6 space-y-4">
+                <div>
+                    <label for="nom_equipe" class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                    <input name="nom_equipe" v-model="selectedEquipe.nom_equipe" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label for="specialisation" class="block text-sm font-medium text-gray-700 mb-1">Specialisation</label>
+                    <input name="specialisation" v-model="selectedEquipe.specialisation" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label for="capacite" class="block text-sm font-medium text-gray-700 mb-1">Capacite</label>
+                    <input type="number" name="capacite" max="8" min="2" v-model="selectedEquipe.capacite" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Chef d'Equipe</label>
+                    <select v-model="selectedEquipe.chef_de_equipe" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                        <option value="" disabled>Chef d'Equipe</option>
+                        <option v-for="t in travailleurs" :key="t.id_travailleur" :value="t.id_travailleur">{{ t.nom }} {{ t.prenom }}</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">No equipe parent ?</label>
+                    <select v-model="selectedEquipe.parent_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" required>
+                        <option value="" disabled>Equipe</option>
+                        <option v-for="e in equipes" :key="e.id_equipe" :value="e.id_equipe">{{ e.nom_equipe }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button @click="afficherFormulaireUpdate = !afficherFormulaireUpdate;modEquipe()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg px-5 py-2.5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+            </div>
+        </form>
+    </div>
+
+    <div v-if="afficherFormulaireDelete" class="fixed inset-0 flex items-center justify-center h-svh w-full bg-black/60 backdrop-blur-sm z-50">
+        <form class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 px-6 py-8 text-center">
+            <div class="flex justify-center mb-3">
+                <span class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-500 text-2xl">
+                    <i class="icofont-warning-alt"></i>
+                </span>
+            </div>
+            <p class="text-lg font-semibold text-gray-800 mb-6">Valider la suppression ?</p>
+            <div class="flex justify-center gap-3">
+                <button type="submit" @click="afficherFormulaireDelete = !afficherFormulaireDelete;deleteEquipe()" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg py-2.5 px-5 shadow-sm transition-all"><i class="icofont-check"></i> Valider</button>
+                <button @click="afficherFormulaireDelete = !afficherFormulaireDelete;" class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg py-2.5 px-5 transition-all"><i class="icofont-close"></i> Annuler</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+<script src="equipes.js" type="module"></script>
+<script src="../shared/auth.js"></script>
+</body>
+</html>

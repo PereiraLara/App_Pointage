@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Historique</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+    <link rel="stylesheet" href="../assets/fonts/icofont/icofont.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/styles/ht-theme-horizon.min.css">
+    <script src="../shared/menu.js"></script>
+</head>
+<style>
+    #encodageMois td,
+    #encodageMois th {
+        background: #ffffff !important;
+        border-color: #e5e7eb !important;
+    }
+
+    #encodageMois th {
+        background: #f9fafb !important;
+    }
+</style>
+<body>
+<div id="app" class="p-4 min-h-screen">
+    <app-menu :user="connectedTravailleur"></app-menu>
+
+    <!-- Back button -->
+    <div>
+        <button class="bg-emerald-400 hover:bg-emerald-700 text-white font-medium rounded-lg py-2 px-4 mb-4"
+                @click="goToProfil(id_travailleur)">
+            <i class="icofont-arrow-left"></i> Retour profil
+        </button>
+        <button v-show="historique.length" class="bg-rose-400 hover:bg-rose-700 text-white font-medium rounded-lg py-2 px-4 mb-4 ml-4"
+                @click="goToStats(id_travailleur)">
+            <i class="icofont-bars"></i> Statistiques
+        </button>
+    </div>
+
+    <div class="pb-4 flex justify-center items-center gap-2">
+        <span id="year-prev"
+              class="icofont-simple-left text-lg sm:text-2xl cursor-pointer text-gray-500 hover:text-sky-500 transition-colors p-2 rounded-full hover:bg-sky-50">
+        </span>
+        <div class="flex flex-row items-baseline gap-1">
+            <p class="font-bold size-2xl text-gray-800">Historique du</p>
+            <input type="number" min="1900" :max="currentYear" step="1" v-model="annee" class="font-bold size-2xl text-gray-800 pl-1 focus:outline-sky-500 transition-colors bg-transparent"/>
+        </div>
+        <span id="year-next"
+              v-show="annee != currentYear"
+              class="icofont-simple-right text-lg sm:text-2xl cursor-pointer text-gray-500 hover:text-sky-500 transition-colors p-2 rounded-full hover:bg-sky-50">
+        </span>
+    </div>
+
+    <p v-if="!historique.length" class="text-center text-red-500 py-8">
+        Aucune prestation à afficher.
+    </p>
+
+    <div v-show="historique.length">
+        <!-- Handsontable -->
+        <div class="overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white p-2">
+            <div id="encodageMois"></div>
+        </div>
+    </div>
+
+</div>
+<script src="historique.js"></script>
+<script src="../shared/auth.js"></script>
+</body>
+</html>

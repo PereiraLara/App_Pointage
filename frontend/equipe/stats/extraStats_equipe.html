@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>extraStats</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../../assets/chart.min.js"></script>
+    <link rel="stylesheet" href="../../assets/fonts/icofont/icofont.min.css">
+    <script src="../../shared/menu.js"></script>
+
+</head>
+<body>
+<div id="app" v-if="isChef || id_travailleur == connectedTravailleur.id_travailleur" class="p-4 min-h-screen bg-gray-50">
+    <app-menu :user="connectedTravailleur"></app-menu>
+
+    <div class="mb-4 flex items-center gap-4">
+        <button class="bg-emerald-400 hover:bg-emerald-700 text-white font-medium rounded-lg py-2 px-4"
+                @click="goTo('profil')">
+            <i class="icofont-arrow-left"></i> Retour profil
+        </button>
+        <button class="bg-rose-400 hover:bg-rose-700 text-white font-medium rounded-lg py-2 px-4"
+                @click="goTo('stats')">
+            <i class="icofont-arrow-left"></i> Retour stats
+        </button>
+    </div>
+
+    <!-- Year selector -->
+    <div class="bg-amber-50 p-4 flex justify-center items-center mb-6 rounded shadow">
+        <span class="icofont-simple-left text-2xl cursor-pointer px-4" @click="changeYear(-1)"></span>
+        <input type="number" min="1900" :max="currentYear" step="1" v-model="annee"
+               class="text-xl font-bold text-center bg-amber-50 w-24"/>
+        <span class="text-2xl px-4"
+              :class="annee < currentYear ? 'icofont-simple-right cursor-pointer' : 'text-gray-300'"
+              @click="changeYear(1)"></span>
+    </div>
+
+    <div v-if="!stats.length" class="text-center text-gray-400 py-16">
+        Aucune donnée pour {{ annee }}.
+    </div>
+
+    <div v-else>
+        <!-- Stacked bar chart -->
+        <div class="hidden lg:inline">
+            <h2 class="text-lg font-bold mb-3">Répartition des jours par mois</h2>
+            <div class="bg-white rounded-xl shadow p-4 h-72">
+                <canvas id="stackedChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Yearly totals table -->
+        <div class="lg:w-5/6 flex lg:justify-self-center flex-col">
+            <h2 class="text-lg font-bold mb-3">Totaux annuels</h2>
+            <div class="bg-white rounded-xl shadow overflow-x-auto mb-8">
+                <table class="w-full text-sm text-center">
+                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
+                    <tr>
+                        <th></th>
+                        <th>Total</th>
+                        <th class="border-l-2"></th>
+                        <th>Total</th>
+                    </tr>
+                    </thead>
+                    <tbody class="border-t-2 border-gray-300 bg-gray-50 font-bold">
+                    <tr>
+                        <td class="px-4 py-3 text-left">Heures dues</td>
+                        <td class="px-4 py-2">{{ yearlyTotal('total_dues') }}h</td>
+                        <td class="px-4 py-3 border-l-2 text-left">Heures prestées</td>
+                        <td class="px-4 py-2">{{ yearlyTotal('total_travaillees') }}h</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3 text-left">Différence</td>
+                        <td class="px-4 py-2"
+                            :class="yearlyTotal('difference') >= 0 ? 'text-green-600' : 'text-red-500'">
+                            {{ yearlyTotal('difference') >= 0 ? '+' : '' }}{{ yearlyTotal('difference') }}h
+                        </td>
+                        <td class="px-4 py-3 border-l-2 text-left">Prestés</td>
+                        <td class="px-4 py-2">{{ yearlyTotal('jours_prestes') }}j</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3 text-left">Congés</td>
+                        <td class="px-4 py-2">{{ yearlyTotal('jours_conge') }}j</td>
+                        <td class="px-4 py-3 border-l-2 text-left">Maladie</td>
+                        <td class="px-4 py-2">{{ yearlyTotal('jours_maladie') }}j</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3 text-left">Chômage</td>
+                        <td class="px-4 py-2">{{ yearlyTotal('jours_chomage') }}j</td>
+                        <td class="px-4 py-3 border-l-2 text-left">Accident</td>
+                        <td class="px-4 py-2">{{ yearlyTotal('jours_accident') }}j</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3 text-left">Récup.</td>
+                        <td class="px-4 py-2">{{ yearlyTotal('jours_recuperation') }}j</td>
+                        <td class="px-4 py-3 border-l-2 text-left">Absences</td>
+                        <td class="px-4 py-2">{{ yearlyTotal('jours_absence') }}j</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Monthly summary cards -->
+        <div class="lg:hidden">
+            <h2 class="text-lg font-bold mb-3">Résumé mensuel</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                <div v-for="s in stats" :key="`${s.mois}-${s.annee}`"
+                     class="bg-white rounded-xl shadow p-4 border-l-4"
+                     :class="s.difference >= 0 ? 'border-green-400' : 'border-red-400'">
+
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-bold text-gray-700">{{ MONTHS[s.mois] }} {{ s.annee }}</span>
+                        <span class="text-xs text-gray-400 bg-gray-100 rounded px-2 py-1">{{ s.type_contrat }}</span>
+                    </div>
+
+                    <!-- Progress bar -->
+                    <div class="mb-3">
+                        <div class="flex justify-between text-sm text-gray-500 mb-1">
+                            <span>{{ s.total_travaillees }}h prestées</span>
+                            <span>/ {{ s.total_dues }}h dues</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2">
+                            <div class="h-2 rounded-full transition-all"
+                                 :class="s.difference >= 0 ? 'bg-green-400' : 'bg-red-400'"
+                                 :style="{ width: Math.min(100, (s.total_travaillees / s.total_dues) * 100) + '%' }">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Difference badge -->
+                    <div class="text-sm font-semibold"
+                         :class="s.difference >= 0 ? 'text-green-600' : 'text-red-500'">
+                        {{ s.difference >= 0 ? '+' : '' }}{{ s.difference }}h
+                        <span class="font-normal text-gray-400">
+                          {{ s.difference >= 0 ? 'heures supplémentaires' : 'heures manquantes' }}
+                      </span>
+                    </div>
+
+                    <!-- Day counters -->
+                    <div class="grid grid-cols-3 gap-1 mt-3 text-xs text-center">
+                        <div class="bg-blue-50 rounded p-1">
+                            <p class="font-bold text-blue-600">{{ s.jours_prestes }}j</p>
+                            <p class="text-gray-400">Prestés</p>
+                        </div>
+                        <div class="bg-green-50 rounded p-1">
+                            <p class="font-bold text-green-600">{{ s.jours_conge }}j</p>
+                            <p class="text-gray-400">Congés</p>
+                        </div>
+                        <div class="bg-yellow-50 rounded p-1">
+                            <p class="font-bold text-yellow-600">{{ s.jours_maladie }}j</p>
+                            <p class="text-gray-400">Maladie</p>
+                        </div>
+                        <div class="bg-orange-50 rounded p-1">
+                            <p class="font-bold text-orange-600">{{ s.jours_chomage }}j</p>
+                            <p class="text-gray-400">Chômage</p>
+                        </div>
+                        <div class="bg-red-50 rounded p-1">
+                            <p class="font-bold text-red-600">{{ s.jours_absence }}j</p>
+                            <p class="text-gray-400">Absences</p>
+                        </div>
+                        <div class="bg-purple-50 rounded p-1">
+                            <p class="font-bold text-purple-600">{{ s.jours_recuperation }}j</p>
+                            <p class="text-gray-400">Récup.</p>
+                        </div>
+                        <div class="bg-gray-50 rounded p-1">
+                            <p class="font-bold text-gray-600">{{ s.autre }}j</p>
+                            <p class="text-gray-400">Autre</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="extraStats_equipe.js"></script>
+<script src="../../shared/auth.js"></script>
+</body>
+</html>
