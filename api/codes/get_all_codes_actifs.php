@@ -29,8 +29,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $stmt = $conn->prepare('SELECT id_code, nom_code, valeur, description, date_debut, date_fin
                                      FROM log_evolution_code_heure 
                                          where date_debut <= :date
-                                         and (date_fin >= :date or date_fin is null)'
-                        );
+                                         and (date_fin >= :date or date_fin is null)
+                                         order by nom_code
+                             ');
 
     $stmt->bindParam(':date', $date);
     $stmt->execute();

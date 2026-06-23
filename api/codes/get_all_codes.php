@@ -22,14 +22,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $data = json_decode(file_get_contents("php://input"));
 
-    $res = $conn->query('SELECT l.id_code, l.nom_code, l.valeur, l.description, l.date_debut, l.date_fin
-                                     FROM log_evolution_code_heure l
+    $res = $conn->query('SELECT c.id_code, c.nom_code, c.valeur, c.description, c.date_debut, c.date_fin
+                                 FROM log_evolution_code_heure c
                                      INNER JOIN (
                                          SELECT id_code, MAX(date_debut) AS max_debut
-                                         FROM log_evolution_code_heure
-                                         GROUP BY id_code
-                                     ) m ON m.id_code = l.id_code AND m.max_debut = l.date_debut'
-                        );
+                                            FROM log_evolution_code_heure
+                                                GROUP BY id_code
+                                     ) latest
+                                        ON c.id_code = latest.id_code
+                                        AND c.date_debut = latest.max_debut
+                                            ORDER BY c.nom_code
+         ');
 
     $resCount = $res->rowCount();
 
